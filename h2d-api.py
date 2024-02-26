@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from flask import Flask, request, jsonify
-from .h2database import h2db
+from flask import Flask, jsonify, request
 from waitress import serve
+
+from modules.h2database import h2db
 
 h2d = Flask(__name__)
 db = h2db()

@@ -1,22 +1,23 @@
-import mysql.connector
-from configparser import ConfigParser
 import os
+from configparser import ConfigParser
 from datetime import datetime
+
+import mysql.connector
 
 
 class h2db:
     def __init__(self):
         # Read local configuration file for better security
         self.cnf = ConfigParser()
-        self.cnf.read(f"{os.getcwd()}/db.conf")
+        self.cnf.read(f"{os.getcwd()}/modules/db.conf")
 
     def connect(self):
         # Connect to MySQL Database and return connection
         return mysql.connector.connect(
-            host=self.cnf["server"],
-            user=self.cnf["user"],
-            password=self.cnf["pass"],
-            database=self.cnf["database"],
+            host=self.cnf["mysql"]["server"],
+            user=self.cnf["mysql"]["user"],
+            password=self.cnf["mysql"]["pass"],
+            database=self.cnf["mysql"]["database"],
         )
 
     def fetch(self, query, args, quantity="one"):
@@ -44,7 +45,6 @@ class h2db:
                 "success": False,
                 "data": str(e),
             }
-            return response
 
         finally:
             # Disconnect from the database and return the query results
