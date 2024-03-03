@@ -20,10 +20,13 @@ class h2db:
             database=self.cnf["mysql"]["database"],
         )
 
-    def fetch(self, query, args, quantity="one"):
+    def fetch(self, query, args, **kwargs):
         # Connect to the database and get a cursor
         db = self.connect()
-        c = db.cursor()
+        if not kwargs.get("dictionary"):
+            c = db.cursor()
+        else:
+            c = db.cursor(dictionary=True)
 
         try:
             if args:
@@ -36,7 +39,7 @@ class h2db:
             # Return one or all responses
             response = {
                 "success": True,
-                "data": c.fetchone() if quantity == "one" else c.fetchall(),
+                "data": c.fetchone() if not kwargs.get("all") else c.fetchall(),
             }
 
         except Exception as e:
@@ -48,5 +51,31 @@ class h2db:
 
         finally:
             # Disconnect from the database and return the query results
-            db.disconnect()
+            c.close()
+            db.close()
+            return response
+
+    def insert(self, query, args):
+        # Connect to the database
+        db = self.connect()
+        c = db.cursor()
+
+        try:
+            # INSERT/UPDATE queries should always be passed safely with args
+            c.execute(query, args)
+            db.commit()
+
+            response = {
+                "success": True,
+                "data": None,
+            }
+        except Exception as e:
+            # Catch errors and give output vs blindly crashing
+            response = {
+                "success": False,
+                "data": str(e),
+            }
+        finally:
+            # Clean up connection and return response
+            db.close()
             return response
