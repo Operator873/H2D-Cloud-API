@@ -4,6 +4,7 @@ from .h2database import h2db
 import re
 import os
 
+h2db = h2db()
 
 def log(msg, **kwargs):
     if kwargs.get("id"):
