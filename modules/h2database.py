@@ -37,21 +37,17 @@ class h2db:
                 c.execute(query)
 
             # Return one or all responses
-            response = {
-                "success": True,
-                "data": c.fetchone() if not kwargs.get("all") else c.fetchall(),
-            }
+            response = c.fetchone() if not kwargs.get("all") else c.fetchall()
 
         except Exception as e:
-            # If an error is encountered, return the information
-            response = {
-                "success": False,
-                "data": str(e),
-            }
+            # If an error is encountered, log the information
+            with open(f"{os.getcwd()}/h2dapi.log", "a") as f:
+                f.write(f"ERROR! - {str(e)}")
+
+            response = None
 
         finally:
             # Disconnect from the database and return the query results
-            c.close()
             db.close()
             return response
 
@@ -65,16 +61,13 @@ class h2db:
             c.execute(query, args)
             db.commit()
 
-            response = {
-                "success": True,
-                "data": None,
-            }
+            response = True
         except Exception as e:
-            # Catch errors and give output vs blindly crashing
-            response = {
-                "success": False,
-                "data": str(e),
-            }
+            # If an error is encountered, log the information
+            with open(f"{os.getcwd()}/h2dapi.log", "a") as f:
+                f.write(f"ERROR! - {str(e)}")
+
+            response = False
         finally:
             # Clean up connection and return response
             db.close()
