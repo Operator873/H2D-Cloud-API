@@ -42,7 +42,7 @@ class h2db:
         except Exception as e:
             # If an error is encountered, log the information
             with open(f"{os.getcwd()}/h2dapi.log", "a") as f:
-                f.write(f"ERROR! - {str(e)}")
+                f.write(f"{datetime.now()} - ERROR! - {str(e)}")
 
             response = None
 
@@ -65,7 +65,7 @@ class h2db:
         except Exception as e:
             # If an error is encountered, log the information
             with open(f"{os.getcwd()}/h2dapi.log", "a") as f:
-                f.write(f"ERROR! - {str(e)}")
+                f.write(f"{datetime.now()} - ERROR! - {str(e)}")
 
             response = False
         finally:
