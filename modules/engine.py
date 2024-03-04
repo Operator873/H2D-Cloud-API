@@ -14,7 +14,7 @@ def log(msg, **kwargs):
     else:
         requestor = ""
     with open(f"{os.getcwd()}/h2dapi.log", "a") as f:
-        f.write(f"{datetime.now} - {requestor} -> {msg}\n")
+        f.write(f"{datetime.now()} - {requestor} -> {msg}\n")
 
 
 def get_customer_id(apikey):
@@ -53,7 +53,7 @@ def do_operation(payload, key_id, key_type):
             # Process a select all request
             if key_type in ["super", "admin"]:
                 return {
-                    "succsess": True,
+                    "success": True,
                     "requestor": requestor,
                     "data": info,
                     "timestamp": datetime.now(),
