@@ -14,7 +14,7 @@ def log(msg, **kwargs):
     else:
         requestor = ""
     with open(f"{os.getcwd()}/h2dapi.log", "a") as f:
-        f.write(f"{datetime.now} - {requestor} -> {msg}")
+        f.write(f"{datetime.now} - {requestor} -> {msg}\n")
 
 
 def get_customer_id(apikey):
@@ -27,12 +27,12 @@ def get_customer_id(apikey):
 def check_key(apikey):
     # Check apikey is valid
     query = """SELECT count(key_id) FROM apikeys WHERE apikey=%s;"""
-    return True if h2db.fetch(query, apikey)[0] > 0 else False
+    return True if h2db.fetch(query, (apikey,))[0] > 0 else False
 
 
 def get_customer_dict(query_key, query_value):
     query = f"""SELECT * FROM customer JOIN apikeys ON customer.cust_id=apikeys.key_id WHERE customer.{query_key}=%s"""
-    return h2db.fetch(query, query_value, dictionary=True)
+    return h2db.fetch(query, (query_value,), dictionary=True)
 
 
 def do_operation(payload, key_id, key_type):
@@ -129,15 +129,15 @@ def admin_get_license(payload, key_id):
     # Verify target info is present or return own license status
     if payload.get("account"):
         query = """SELECT cust_license, cust_active FROM customer WHERE cust_acct=%s"""
-        info = h2db.fetch(query, payload.get("account"), dictionary=True)
+        info = h2db.fetch(query, (payload.get("account"),), dictionary=True)
     elif payload.get("license"):
         query = (
             """SELECT cust_license, cust_active FROM customer WHERE cust_license=%s"""
         )
-        info = h2db.fetch(query, payload.get("license"), dictionary=True)
+        info = h2db.fetch(query, (payload.get("license"),), dictionary=True)
     else:
         query = """SELECT cust_license, cust_active FROM customer WHERE cust_id=%s"""
-        info = h2db.fetch(query, key_id, dictionary=True)
+        info = h2db.fetch(query, (key_id,), dictionary=True)
 
     return info
 
