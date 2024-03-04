@@ -37,7 +37,7 @@ def get_customer_dict(query_key, query_value):
 
 def do_operation(payload, key_id, key_type):
     requestor = h2db.fetch(
-        """SELECT cust_name FROM customer WHERE cust_id=%s;""", key_id
+        """SELECT cust_name FROM customer WHERE cust_id=%s;""", (key_id,)
     )[0]
 
     # Handle query operations
