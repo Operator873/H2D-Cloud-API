@@ -85,6 +85,16 @@ def do_operation(payload, key_id, key_type):
                         }
                     )
         else:
+            # Verify select is valid
+            if payload.get("select") not in ['cust_id', 'cust_acct', 'cust_license', 'key_id', 'apikey']:
+                return jsonify(
+                    {
+                        "success": False,
+                        "requestor": requestor,
+                        "msg": "Valid selectors are cust_id, cust_acct, cust_license, key_id, and apikey.",
+                        "timestamp": datetime.now(),
+                    }
+                )
             # Handle specific selection
             if key_type in ['super', 'admin']:
                 # Let admin keys select the info
