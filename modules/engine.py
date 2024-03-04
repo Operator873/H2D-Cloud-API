@@ -20,7 +20,7 @@ def log(msg, **kwargs):
 def get_customer_id(apikey):
     # Fetch key_id with apikey for authentication
     query = """SELECT key_id, key_type FROM apikeys WHERE apikey=%s;"""
-    response = h2db.fetch(query, apikey)
+    response = h2db.fetch(query, (apikey,))
     return response
 
 
