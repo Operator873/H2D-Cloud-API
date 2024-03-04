@@ -1,8 +1,10 @@
-from flask import jsonify
-from datetime import datetime
-from .h2database import h2db
-import re
 import os
+import re
+from datetime import datetime
+
+from flask import jsonify
+
+from .h2database import h2db
 
 h2db = h2db()
 
@@ -48,6 +50,25 @@ def do_operation(payload, key_id, key_type):
             return query_help()
 
         query_key, query_value = payload.get("where").split("=")
+
+        # Verify filter is valid to prevent multiple items
+        if query_key not in [
+            "cust_id",
+            "cust_acct",
+            "cust_name",
+            "cust_license",
+            "key_id",
+            "apikey",
+        ]:
+            return jsonify(
+                {
+                    "success": False,
+                    "requestor": requestor,
+                    "msg": "Valid 'where' keys are cust_id, cust_acct, cust_name, cust_license, key_id, and apikey.",
+                    "timestamp": datetime.now(),
+                }
+            )
+
         info = get_customer_dict(query_key, query_value)
 
         if not payload.get("select") or payload.get("select") == "*":
@@ -85,18 +106,8 @@ def do_operation(payload, key_id, key_type):
                         }
                     )
         else:
-            # Verify select is valid
-            if payload.get("select") not in ['cust_id', 'cust_acct', 'cust_license', 'key_id', 'apikey']:
-                return jsonify(
-                    {
-                        "success": False,
-                        "requestor": requestor,
-                        "msg": "Valid selectors are cust_id, cust_acct, cust_license, key_id, and apikey.",
-                        "timestamp": datetime.now(),
-                    }
-                )
             # Handle specific selection
-            if key_type in ['super', 'admin']:
+            if key_type in ["super", "admin"]:
                 # Let admin keys select the info
                 return jsonify(
                     {
@@ -113,7 +124,9 @@ def do_operation(payload, key_id, key_type):
                         {
                             "success": True,
                             "requestor": requestor,
-                            "data": {payload.get("select"): info[payload.get("select")]},
+                            "data": {
+                                payload.get("select"): info[payload.get("select")]
+                            },
                             "timestamp": datetime.now(),
                         }
                     )
@@ -127,7 +140,6 @@ def do_operation(payload, key_id, key_type):
                             "timestamp": datetime.now(),
                         }
                     )
-
 
     # Handle license operations
     elif payload.get("operation").lower() == "license":
