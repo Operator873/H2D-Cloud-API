@@ -6,6 +6,7 @@ import os
 
 h2db = h2db()
 
+
 def log(msg, **kwargs):
     if kwargs.get("id"):
         requestor = h2db.fetch(
@@ -52,27 +53,33 @@ def do_operation(payload, key_id, key_type):
         if not payload.get("select") or payload.get("select") == "*":
             # Process a select all request
             if key_type in ["super", "admin"]:
-                return {
-                    "success": True,
-                    "requestor": requestor,
-                    "data": info,
-                    "timestamp": datetime.now(),
-                }
-            else:
-                if key_id == info["key_id"]:
-                    return {
+                return jsonify(
+                    {
                         "success": True,
                         "requestor": requestor,
                         "data": info,
                         "timestamp": datetime.now(),
                     }
+                )
+            else:
+                if key_id == info["key_id"]:
+                    return jsonify(
+                        {
+                            "success": True,
+                            "requestor": requestor,
+                            "data": info,
+                            "timestamp": datetime.now(),
+                        }
+                    )
                 else:
-                    return {
-                        "success": False,
-                        "requestor": requestor,
-                        "msg": "This key is limited to self inquires only.",
-                        "timestamp": datetime.now(),
-                    }
+                    return jsonify(
+                        {
+                            "success": False,
+                            "requestor": requestor,
+                            "msg": "This key is limited to self inquires only.",
+                            "timestamp": datetime.now(),
+                        }
+                    )
 
     # Handle license operations
     elif payload.get("operation").lower() == "license":
@@ -165,7 +172,7 @@ def license_help():
 def query_help():
     return {
         "success": True,
-        "help": "The query operation returns all customer information based on a search criteria. The results can be filtered with the 'filter' key.",
+        "help": "The query operation returns all customer information based on a MySQL search style transaction.",
         "example": {
             "operation": "query",
             "apikey": "abc1234",
