@@ -9,7 +9,7 @@ h2db = h2db()
 def log(msg, **kwargs):
     if kwargs.get("id"):
         requestor = h2db.fetch(
-            """SELECT cust_name FROM customer WHERE cust_id=%s;""", kwargs.get("id")
+            """SELECT cust_name FROM customer WHERE cust_id=%s;""", (kwargs.get("id"),)
         )[0]
     else:
         requestor = ""
