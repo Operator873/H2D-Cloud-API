@@ -53,6 +53,7 @@ def do_operation(payload, key_id, key_type):
         if not payload.get("select") or payload.get("select") == "*":
             # Process a select all request
             if key_type in ["super", "admin"]:
+                # Key is admin, proceed with any transaction
                 return jsonify(
                     {
                         "success": True,
@@ -62,7 +63,9 @@ def do_operation(payload, key_id, key_type):
                     }
                 )
             else:
+                # Handle a select all request from a customer
                 if key_id == info["key_id"]:
+                    # Verify the customer is self interrogating
                     return jsonify(
                         {
                             "success": True,
@@ -72,6 +75,7 @@ def do_operation(payload, key_id, key_type):
                         }
                     )
                 else:
+                    # Reject customer requests for any other info
                     return jsonify(
                         {
                             "success": False,
@@ -80,6 +84,40 @@ def do_operation(payload, key_id, key_type):
                             "timestamp": datetime.now(),
                         }
                     )
+        else:
+            # Handle specific selection
+            if key_type in ['super', 'admin']:
+                # Let admin keys select the info
+                return jsonify(
+                    {
+                        "success": True,
+                        "requestor": requestor,
+                        "data": info[payload.get("select")],
+                        "timestamp": datetime.now(),
+                    }
+                )
+            else:
+                # Verify customer is self interrogating
+                if key_id == info["key_id"]:
+                    return jsonify(
+                        {
+                            "success": True,
+                            "requestor": requestor,
+                            "data": info[payload.get("select")],
+                            "timestamp": datetime.now(),
+                        }
+                    )
+                else:
+                    # Reject customer requests for any other info
+                    return jsonify(
+                        {
+                            "success": False,
+                            "requestor": requestor,
+                            "msg": "This key is limited to self inquires only.",
+                            "timestamp": datetime.now(),
+                        }
+                    )
+
 
     # Handle license operations
     elif payload.get("operation").lower() == "license":
