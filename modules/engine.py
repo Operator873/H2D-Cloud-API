@@ -92,7 +92,7 @@ def do_operation(payload, key_id, key_type):
                     {
                         "success": True,
                         "requestor": requestor,
-                        "data": info[payload.get("select")],
+                        "data": {payload.get("select"): info[payload.get("select")]},
                         "timestamp": datetime.now(),
                     }
                 )
@@ -103,7 +103,7 @@ def do_operation(payload, key_id, key_type):
                         {
                             "success": True,
                             "requestor": requestor,
-                            "data": info[payload.get("select")],
+                            "data": {payload.get("select"): info[payload.get("select")]},
                             "timestamp": datetime.now(),
                         }
                     )
