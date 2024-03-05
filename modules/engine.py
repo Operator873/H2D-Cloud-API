@@ -39,6 +39,7 @@ def get_customer_dict(query_key, query_value):
 
 
 def do_operation(payload, key_id, key_type):
+    # Fetch the requestor's account name
     requestor = h2db.fetch(
         """SELECT cust_name FROM customer WHERE cust_id=%s;""", (key_id,)
     )[0]
@@ -60,14 +61,7 @@ def do_operation(payload, key_id, key_type):
             "key_id",
             "apikey",
         ]:
-            return jsonify(
-                {
-                    "success": False,
-                    "requestor": requestor,
-                    "msg": "Valid 'where' keys are cust_id, cust_acct, cust_name, cust_license, key_id, and apikey.",
-                    "timestamp": datetime.now(),
-                }
-            )
+            return invalid_where_key(requestor)
 
         info = get_customer_dict(query_key, query_value)
 
@@ -75,93 +69,43 @@ def do_operation(payload, key_id, key_type):
             # Process a select all request
             if key_type in ["super", "admin"]:
                 # Key is admin, proceed with any transaction
-                return jsonify(
-                    {
-                        "success": True,
-                        "requestor": requestor,
-                        "data": info,
-                        "timestamp": datetime.now(),
-                    }
-                )
+                return return_query(requestor, info)
             else:
                 # Handle a select all request from a customer
                 if key_id == info["key_id"]:
                     # Verify the customer is self interrogating
-                    return jsonify(
-                        {
-                            "success": True,
-                            "requestor": requestor,
-                            "data": info,
-                            "timestamp": datetime.now(),
-                        }
-                    )
+                    return return_query(requestor, info)
                 else:
                     # Reject customer requests for any other info
-                    return jsonify(
-                        {
-                            "success": False,
-                            "requestor": requestor,
-                            "msg": "This key is limited to self inquires only.",
-                            "timestamp": datetime.now(),
-                        }
-                    )
+                    return query_unauthorized(requestor)
         else:
             # Handle specific selection
             if key_type in ["super", "admin"]:
                 # Let admin keys select the info
-                return jsonify(
-                    {
-                        "success": True,
-                        "requestor": requestor,
-                        "data": {payload.get("select"): info[payload.get("select")]},
-                        "timestamp": datetime.now(),
-                    }
+                return return_query(
+                    requestor, {payload.get("select"): info[payload.get("select")]}
                 )
             else:
                 # Verify customer is self interrogating
                 if key_id == info["key_id"]:
-                    return jsonify(
-                        {
-                            "success": True,
-                            "requestor": requestor,
-                            "data": {
-                                payload.get("select"): info[payload.get("select")]
-                            },
-                            "timestamp": datetime.now(),
-                        }
+                    return return_query(
+                        requestor, {payload.get("select"): info[payload.get("select")]}
                     )
                 else:
                     # Reject customer requests for any other info
-                    return jsonify(
-                        {
-                            "success": False,
-                            "requestor": requestor,
-                            "msg": "This key is limited to self inquires only.",
-                            "timestamp": datetime.now(),
-                        }
-                    )
+                    return self_interrogation_only(requestor)
 
     # Handle license operations
     elif payload.get("operation").lower() == "license":
         # Super and Admin type keys can view anything
         if key_type in ["super", "admin"]:
-            return {
-                "success": True,
-                "requestor": requestor,
-                "data": admin_get_license(payload, key_id),
-                "timestamp": datetime.now(),
-            }
+            return return_query(requestor, admin_get_license(payload, key_id))
         else:
             return get_license(payload, key_id)
 
     # Update operations need to be POST requests. Return an error.
     elif payload.get("operation").lower() == "update":
-        return {
-            "success": False,
-            "requestor": requestor,
-            "msg": "Update operations should be conducted by POST and only with admin keys.",
-            "timestamp": datetime.now(),
-        }
+        return post_required(requestor)
 
     # Assume error and send a response
     else:
@@ -174,22 +118,15 @@ def get_license(payload, key_id):
         payload.get("account") == customer["cust_acct"]
         or payload.get("license") == customer["cust_license"]
     ):
-        return {
-            "success": True,
-            "requestor": customer["cust_name"],
-            "data": {
+        return return_query(
+            customer["cust_name"],
+            {
                 "license": customer["cust_license"],
                 "active": customer["cust_active"],
             },
-            "timestamp": datetime.now(),
-        }
+        )
     else:
-        return {
-            "success": False,
-            "requestor": customer["cust_name"],
-            "msg": "This key is limited to self inquires only.",
-            "timestamp": datetime.now(),
-        }
+        return self_interrogation_only(customer["cust_name"])
 
 
 def admin_get_license(payload, key_id):
@@ -282,6 +219,61 @@ def invalid_key():
         {
             "success": False,
             "msg": "The API key supplied is not valid.",
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def invalid_where_key(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "Valid 'where' keys are cust_id, cust_acct, cust_name, cust_license, key_id, and apikey.",
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def return_query(requestor, data):
+    return jsonify(
+        {
+            "success": True,
+            "requestor": requestor,
+            "data": data,
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def query_unauthorized(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "This key is limited to self inquires only.",
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def self_interrogation_only(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "This key is limited to self inquires only.",
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def post_required(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "Update operations should be conducted by POST and only with admin keys.",
             "timestamp": datetime.now(),
         }
     )
