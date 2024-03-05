@@ -1,5 +1,7 @@
 import os
 import re
+import random
+import string
 from datetime import datetime
 
 from flask import jsonify
@@ -15,7 +17,7 @@ def log(msg, **kwargs):
             """SELECT cust_name FROM customer WHERE cust_id=%s;""", (kwargs.get("id"),)
         )[0]
     else:
-        requestor = ""
+        requestor = "SYSTEM MSG"
     with open(f"{os.getcwd()}/h2dapi.log", "a") as f:
         f.write(f"{datetime.now()} - {requestor} -> {msg}\n")
 
@@ -104,12 +106,35 @@ def do_operation(payload, key_id, key_type):
             return get_license(payload, key_id)
 
     # Update operations need to be POST requests. Return an error.
-    elif payload.get("operation").lower() == "update":
+    elif payload.get("operation").lower() in ["update", "create"]:
         return post_required(requestor)
 
     # Assume error and send a response
     else:
         return empty_help()
+
+
+def post_operation(payload, key_id):
+    # Translate key_id into customer name
+    requestor = h2db.fetch(
+        """SELECT cust_name FROM customer WHERE cust_id=%s;""", (key_id,)
+    )[0]
+
+    # Catch GET operations early
+    if payload.get("operation") in ['license', 'query']:
+        return use_get_transaction(requestor)
+    
+    # Handle new account creations
+    elif payload.get("operation") == "create":
+        return create_new_account(payload, requestor)
+    
+    # Handle account updates
+    elif payload.get("operation") == "update":
+        return update_account(payload, requestor)
+    
+    # Assume error and send a response
+    else:
+        return empty_post(requestor)
 
 
 def get_license(payload, key_id):
@@ -144,6 +169,66 @@ def admin_get_license(payload, key_id):
         info = h2db.fetch(query, (key_id,), dictionary=True)
 
     return info
+
+
+def admin_required(key_id, key_type):
+    requestor = h2db.fetch(
+        """SELECT cust_name FROM customer WHERE cust_id=%s""", (key_id,)
+    )[0]
+
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": f"Key type: {key_type} is not permitted to conduct POST operations.",
+            "timestamp": datetime.now()
+        }
+    )
+
+
+def create_new_account(payload, requestor):
+    # The new customer information should be inside the data filed
+    if "data" not in payload:
+        return invalid_create_request(requestor)
+    
+    # Verify all required data is present
+    new_data = payload.get("data")
+    required_keys = ['cust_acct', 'cust_name', 'cust_license', 'cust_active', 'type']
+
+    good_request = True
+    for item in required_keys:
+        if item not in new_data:
+            good_request = False
+            break
+    
+    # Throw back help if not a valid dataset
+    if not good_request:
+        return invalid_create_request(requestor)
+    
+    # Insert new customer
+    query = """INSERT INTO customer VALUES(%s, %s, %s, %s, %s)"""
+    args = (0, new_data["cust_acct"], new_data["cust_name"], new_data["cust_license"], new_data['cust_active'])
+    
+    if not h2db.insert(query, args):
+        log(f"Database failure: {query} with {args}")
+        return db_insert_failure(requestor)
+    
+    customer_id = h2db.fetch(
+        """SELECT cust_id FROM customer WHERE cust_acct=%s""", (new_data["cust_acct"],)
+    )[0]
+
+    if not h2db.insert(
+        """INSERT INTO apikeys VALUES(%s, %s, %s)""", (customer_id, create_new_apikey(), new_data["type"])
+    ):
+        log(f"Database failure: {query} with {args}")
+        return db_insert_failure(requestor)
+    
+    info = get_customer_dict("cust_id", customer_id)
+    return successful_creation(requestor, info)
+
+
+def create_new_apikey():
+    return random.choices(string.ascii_letters + string.digits, k=64)
 
 
 def help(payload):
@@ -273,7 +358,73 @@ def post_required(requestor):
         {
             "success": False,
             "requestor": requestor,
-            "msg": "Update operations should be conducted by POST and only with admin keys.",
+            "msg": "Update or create operations should be conducted by POST and only with admin keys.",
             "timestamp": datetime.now(),
+        }
+    )
+
+
+def use_get_transaction(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "Query or License operations should be conducted via a GET request.",
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def empty_post(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "POST requests can be used to create or update customer information. These transactions are only available to admin keys.",
+            "timestamp": datetime.now()
+        }
+    )
+
+
+def invalid_create_request(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestpr": requestor,
+            "msg": "In order to create a new customer account, you must supply the required information. See example.",
+            "example": {
+                "operation": "create",
+                "apikey": "abc1234",
+                "data": {
+                    "cust_acct": 10001,
+                    "cust_name": "Example Customer",
+                    "cust_license": "1234abcd",
+                    "cust_active": 1,
+                    "type": "customer"
+                }
+            },
+            "timestamp": datetime.now()
+        }
+    )
+
+
+def db_insert_failure(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "A failure occured writing to the database. The incident has been logged.",
+            "timestamp": datetime.now()
+        }
+    )
+
+
+def successful_creation(requestor, info):
+    return jsonify(
+        {
+            "success": True,
+            "requestor": requestor,
+            "data": info,
+            "timestamp": datetime.now()
         }
     )
