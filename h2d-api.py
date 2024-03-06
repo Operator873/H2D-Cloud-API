@@ -18,7 +18,7 @@ def main():
     @h2d.route("/api", methods=["GET"])
     def api_get():
         # Before anything else, log unique connection information
-        log_data = f"IP: {request.environ['HTTP_X_FORWARDED_FOR']} - UA: {request.headers.get('User-Agent')}"
+        log_data = f"""IP: {request.environ.get("HTTP_X_FORWARDED_FOR")} - UA: {request.headers.get("User-Agent")}"""
         engine.log(log_data)
 
         # Refuse connections with no apikey
@@ -51,7 +51,7 @@ def main():
     @h2d.route("/api", methods=["POST"])
     def api_post():
         # Before anything else, log unique connection information
-        log_data = f"IP: {request.environ['HTTP_X_FORWARDED_FOR']} - UA: {request.headers.get('User-Agent')}"
+        log_data = f"""IP: {request.environ.get("HTTP_X_FORWARDED_FOR")} - UA: {request.headers.get("User-Agent")}"""
         engine.log(log_data)
 
         # Refuse connections with no apikey
