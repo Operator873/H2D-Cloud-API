@@ -209,15 +209,17 @@ def create_new_account(payload, requestor):
 
     # Insert new customer
     query = """INSERT INTO customer VALUES(%s, %s, %s, %s, %s)"""
-    args = (
-        0,
-        int(new_data["cust_acct"]),
-        new_data["cust_name"],
-        new_data["cust_license"],
-        int(new_data["cust_active"]),
-    )
 
-    if not h2db.insert(query, args):
+    if not h2db.insert(
+        query,
+        (
+            0,
+            int(new_data["cust_acct"]),
+            new_data["cust_name"],
+            new_data["cust_license"],
+            int(new_data["cust_active"]),
+        ),
+    ):
         log(f"Database failure: {query} with {args}")
         return reply.db_insert_failure(requestor)
 
