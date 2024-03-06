@@ -211,10 +211,10 @@ def create_new_account(payload, requestor):
     query = """INSERT INTO customer VALUES(%s, %s, %s, %s, %s)"""
     args = (
         0,
-        new_data["cust_acct"],
+        int(new_data["cust_acct"]),
         new_data["cust_name"],
         new_data["cust_license"],
-        new_data["cust_active"],
+        int(new_data["cust_active"]),
     )
 
     if not h2db.insert(query, args):
