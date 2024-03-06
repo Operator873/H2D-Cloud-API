@@ -20,7 +20,7 @@ class h2db:
             database=self.cnf["mysql"]["database"],
         )
 
-    def fetch(self, query, args, **kwargs):
+    def fetch(self, query, args=False, **kwargs):
         # Connect to the database and get a cursor
         db = self.connect()
         if not kwargs.get("dictionary"):
@@ -51,7 +51,7 @@ class h2db:
             db.close()
             return response
 
-    def insert(self, query, args):
+    def insert(self, query, args=False):
         # Connect to the database
         db = self.connect()
         c = db.cursor()
