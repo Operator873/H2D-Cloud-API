@@ -2,6 +2,7 @@ import os
 import random
 import re
 import string
+import json
 from datetime import datetime
 
 from flask import jsonify
@@ -193,7 +194,7 @@ def create_new_account(payload, requestor):
         return reply.invalid_create_request(requestor)
 
     # Verify all required data is present
-    new_data = payload.get("data")
+    new_data = json.loads(payload.get("data"))
     required_keys = ["cust_acct", "cust_name", "cust_license", "cust_active", "type"]
 
     good_request = True
