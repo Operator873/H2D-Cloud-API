@@ -18,7 +18,7 @@ def main():
     @h2d.route("/api", methods=["GET"])
     def api_get():
         # Before anything else, log unique connection information
-        log_data = f"IP: {request.environ["HTTP_X_FORWARDED_FOR"]} - UA: {request.headers.get("User-Agent")}"
+        log_data = f"""IP: {request.environ["HTTP_X_FORWARDED_FOR"]} - UA: {request.headers.get("User-Agent")}"""
         engine.log(log_data)
 
         # Refuse connections with no apikey
@@ -78,17 +78,9 @@ def main():
         if "operation" in request.args:
             return engine.post_operation(request.args, key_id), 200
         
-        
-
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "msg": "This function of the API is still under development.",
-                }
-            ),
-            200,
-        )
+        # Catch any other POST otherwise not handled
+        else:
+            return jsonify(engine.empty_help()), 200
 
     # Handle DELETE requests
     @h2d.route("/api", methods=["DELETE"])

@@ -235,6 +235,59 @@ def create_new_account(payload, requestor):
     return reply.successful_creation(requestor, info)
 
 
+def update_customer(payload, key_id):
+    # Fetch requestor name
+    requestor = h2db.fetch(
+        """SELECT cust_name FROM customer WHERE cust_id=%s""", (key_id,)
+    )[0]
+
+    # If there's no data payload sent, reject
+    if not payload.get("data"):
+        return reply.invalid_update_request(requestor)
+
+    data = payload.get("data")
+
+    # If the request isn't correctly formatted, reject
+    if "update" not in data or "set" not in data:
+        return reply.invalid_update_request(requestor)
+
+    # Verify the update selection is valid
+    if data["update"].split("=") != 2:
+        return reply.invalid_update_request(requestor)
+
+    # Split the update value and select the customer target
+    target_column, target_value = data["update"].split("=")
+    target = h2db.fetch(
+        f"""SELECT cust_id FROM customer WHERE {target_column}="{target_value}";"""
+    )[0]
+
+    # Catch no target issues
+    if not target:
+        return reply.customer_not_found(data, requestor)
+
+    # Give feedback on what, exactly, was updated
+    updated_items = []
+
+    # Handle all table changes
+    for item in data["set"]:
+        if item.startswith("cust") and item.split("=") == 2:
+            column, value = item.split("=")
+            updated_items.append(column)
+            query = f"""UPDATE customer SET {column}="{value}" where cust_id=%s;"""
+            h2db.insert(query, (target,))
+
+        if item.startswith("apikey") and item.split("=") == 2:
+            column, value = item.split("=")
+            updated_items.append(column)
+            query = """UPDATE apikeys SET apikey=%s WHERE key_id=%s;"""
+            h2db.insert(query, (value, target))
+
+    # Fetch fresh copy of affected customer info
+    new_customer = get_customer_dict("cust_id", target)
+
+    return reply.update_customer_confirmation(updated_items, new_customer, requestor)
+
+
 def create_new_apikey():
     return random.choices(string.ascii_letters + string.digits, k=64)
 

@@ -169,6 +169,29 @@ def invalid_create_request(requestor):
     )
 
 
+def invalid_update_request(requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestpr": requestor,
+            "msg": "In order to update a new customer account, you must supply a unique key in the 'update' field. A list of values to change in the database is supplied in the 'update' field. Must be a JSON format list.",
+            "example": {
+                "operation": "update",
+                "apikey": "abc1234",
+                "update": "<cust_acct=123abc/cust_name=Best Chiropractic/cust_license=abc1234>",
+                "set": [
+                    "cust_acct=123abc",
+                    "cust_name=Best Chiropractic",
+                    "cust_license=abc1234",
+                    "cust_active=0",
+                    "apikey=1234abc",
+                ],
+            },
+            "timestamp": datetime.now(),
+        }
+    )
+
+
 def db_insert_failure(requestor):
     return jsonify(
         {
@@ -186,6 +209,30 @@ def successful_creation(requestor, info):
             "success": True,
             "requestor": requestor,
             "data": info,
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def customer_not_found(data, requestor):
+    return jsonify(
+        {
+            "success": False,
+            "requestor": requestor,
+            "msg": "The customer indicated by the 'update' field was not found.",
+            "data": data["update"],
+            "timestamp": datetime.now(),
+        }
+    )
+
+
+def update_customer_confirmation(updated, customer, requestor):
+    return jsonify(
+        {
+            "success": True,
+            "requestor": requestor,
+            "updated": updated,
+            "data": customer,
             "timestamp": datetime.now(),
         }
     )
