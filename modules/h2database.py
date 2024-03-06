@@ -57,8 +57,10 @@ class h2db:
         c = db.cursor()
 
         try:
-            # INSERT/UPDATE queries should always be passed safely with args
-            c.execute(query, args)
+            if args:
+                c.execute(query, args)
+            else:
+                c.execute(query)
             db.commit()
 
             response = True

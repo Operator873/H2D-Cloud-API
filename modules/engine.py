@@ -208,30 +208,22 @@ def create_new_account(payload, requestor):
         return reply.invalid_create_request(requestor)
 
     # Insert new customer
-    query = """INSERT INTO customer VALUES(%s, %s, %s, %s, %s)"""
+    query = f"""INSERT INTO customer VALUES(0, {int(new_data["cust_acct"])}, {new_data["cust_name"]}, {new_data["cust_license"]}, {int(new_data["cust_active"])})"""
 
-    if not h2db.insert(
-        query,
-        (
-            0,
-            int(new_data["cust_acct"]),
-            new_data["cust_name"],
-            new_data["cust_license"],
-            int(new_data["cust_active"]),
-        ),
-    ):
-        log(f"Database failure: {query} with {args}")
+    if not h2db.insert(query):
+        log(f"Database failure: {query} with {new_data}")
         return reply.db_insert_failure(requestor)
 
     customer_id = h2db.fetch(
-        """SELECT cust_id FROM customer WHERE cust_acct=%s""", (new_data["cust_acct"],)
+        """SELECT cust_id FROM customer WHERE cust_acct=%s""",
+        (int(new_data["cust_acct"]),),
     )[0]
 
     if not h2db.insert(
         """INSERT INTO apikeys VALUES(%s, %s, %s)""",
         (customer_id, create_new_apikey(), new_data["type"]),
     ):
-        log(f"Database failure: {query} with {args}")
+        log(f"Database failure: {query}")
         return reply.db_insert_failure(requestor)
 
     info = get_customer_dict("cust_id", customer_id)
